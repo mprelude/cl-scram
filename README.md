@@ -1,5 +1,8 @@
 # cl-scram
 
+**THIS LIBRARY IS NOT IN A WORKING STATE.
+PLEASE DO NOT DOWNLOAD IT AND EXPECT IT TO WORK IN YOUR CODE.**
+
 [TOC]
 
 ## Introduction
@@ -88,7 +91,6 @@ You'll typically want this base64 encoded. To do this, you can either wrap the c
 "biwsbj11c2VybmFtZSxyPXg2dUhwdHJJTTZQQUZNdG1iR0NOOHV1eTBMU25aQ3d3"
 ```
 
-*Note: These base64-encoded messages are different because the nonce was regenerated for each request.*
 
 You'll need to pass this to the server.
 
@@ -100,9 +102,11 @@ The server should respond with a base64-encoded string, which when decoded looks
 r=6d442b5d9e51a740f369e3dcecf3178ec12b3985bbd4a8e6f814b422ab766573,s=Vdptv0j/N6fs2qtVADc1Xg==,i=8192
 ```
 
+In order to generate the final response, we'll need to create a new request:
 
+TODO: ADD client request generation docs.
 
-### Understanding the server response
+### Understanding the first server response
 
 The server should respond with a base64-encoded string, when decoded, this will have three parameters:
 
@@ -149,4 +153,3 @@ If this library has been helpful to you, I don't seek any donations, but please 
 ## TODO
 
 1. Implement [SASLprep](https://www.ietf.org/rfc/rfc4013.txt) algorithm to support the full gamut of passwords. For now, using the library with passwords containing unsupported characters is considered unsupported behavior.
-2. Implement secure random nonce generation. This is not required by the SCRAM standard but will make requests less predictable & thus more secure.
