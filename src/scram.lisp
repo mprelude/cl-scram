@@ -21,8 +21,9 @@
     (let* ((final-message-bare (format nil "c=biws,r=~a" (parse-server-nonce :nonce client-nonce
                                                                              :response server-response)))
            (salted-password    (ironclad:pbkdf2-hash-password-to-combined-string
-                                 password
-                                 :salt       (parse-server-salt :response server-response)
+                                 (ironclad:ascii-string-to-byte-array password)
+                                 :salt       (ironclad:ascii-string-to-byte-array
+                                               (parse-server-salt :response server-response))
                                  :digest     :sha1
                                  :iterations (parse-server-iterations :response server-response)))
            (client-key         (gen-hmac-digest :key salted-password :message "Client Key"))
@@ -36,7 +37,8 @@
                                        (parse-integer client-signature :radix 16)))
            (server-key         (gen-hmac-digest :key salted-password :message "Server Key"))
            (server-signature   (gen-hmac-digest :key server-key :message auth-message))
-           (final-message      (format nil "~a,p=~a" final-message-bare (base64-encode client-proof))))
+           (final-message      (format nil "~a,p=~a" final-message-bare (base64-encode
+                                                                          (write-to-string client-proof)))))
       (pairlis '(final-message server-signature) (list final-message server-signature)))))
 
 (defun gen-client-encoded-initial-message (&key username nonce)
@@ -78,6 +80,6 @@
 (defun parse-server-iterations (&key response)
   (check-type response string)
   "Gets the number of iterations from the base64-decoded response string."
-  (cdr (assoc "i"
-              (parse-server-response :response response)
-              :test #'equal)))
+  (parse-integer (cdr (assoc "i"
+                      (parse-server-response :response response)
+                      :test #'equal))))
