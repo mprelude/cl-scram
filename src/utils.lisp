@@ -28,18 +28,27 @@
         password))
 
 (defun gen-hmac-digest (&key key message)
-  (check-type key string)
-  (check-type message string)
   "Takes a key & a message, and generates a HMAC digest."
-  (ironclad:byte-array-to-hex-string
-    (ironclad:hmac-digest
-      (ironclad:update-hmac
-        (ironclad:make-hmac
-          (ironclad:ascii-string-to-byte-array key) :sha1)
-          (ironclad:ascii-string-to-byte-array message)))))
+  (ironclad:hmac-digest
+    (ironclad:update-hmac
+      (ironclad:make-hmac key :sha1) message)))
 
 (defun gen-sha1-digest (&key key)
-  (check-type key string)
   "Takes a key, and generates a SHA1 digest."
-  (ironclad:byte-array-to-hex-string (ironclad:digest-sequence :sha1
-                                                               (ironclad:ascii-string-to-byte-array key))))
+  (ironclad:digest-sequence :sha1 key))
+
+(defun bit-vector->integer (bit-vector)
+  "Create a positive integer from a bit-vector."
+  (reduce #'(lambda (first-bit second-bit)
+              (+ (* first-bit 2) second-bit))
+          bit-vector))
+
+(defun integer->bit-vector (integer)
+  "Create a bit-vector from a positive integer."
+  (labels ((integer->bit-list (int &optional accum)
+             (cond ((> int 0)
+                    (multiple-value-bind (i r) (truncate int 2)
+                      (integer->bit-list i (push r accum))))
+                   ((null accum) (push 0 accum))
+                   (t accum))))
+        (coerce (integer->bit-list integer) 'bit-vector)))

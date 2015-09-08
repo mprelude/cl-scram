@@ -16,27 +16,30 @@
   "Takes a password, the initial client nonce, the initial client message & the server response.
    Generates the final client message, and returns it along with the server signature."
   (progn
-    (if (eq nil (parse-server-nonce :nonce client-nonce :response server-response))
-        NIL)
+    (if (eq nil (parse-server-nonce :nonce client-nonce :response server-response)) NIL)
     (let* ((final-message-bare (format nil "c=biws,r=~a" (parse-server-nonce :nonce client-nonce
                                                                              :response server-response)))
-           (salted-password    (ironclad:pbkdf2-hash-password-to-combined-string
+           (salted-password    (ironclad:pbkdf2-hash-password
                                  (ironclad:ascii-string-to-byte-array password)
                                  :salt       (ironclad:ascii-string-to-byte-array
                                                (parse-server-salt :response server-response))
                                  :digest     :sha1
                                  :iterations (parse-server-iterations :response server-response)))
-           (client-key         (gen-hmac-digest :key salted-password :message "Client Key"))
+           (client-key         (gen-hmac-digest :key salted-password
+                                                :message (ironclad:ascii-string-to-byte-array "Client Key")))
            (stored-key         (gen-sha1-digest :key client-key))
            (auth-message       (format nil "~a,~a,~a"
                                        client-initial-message
                                        server-response
                                        final-message-bare))
-           (client-signature   (gen-hmac-digest :key stored-key :message auth-message))
-           (client-proof       (logxor (parse-integer client-key :radix 16)
-                                       (parse-integer client-signature :radix 16)))
-           (server-key         (gen-hmac-digest :key salted-password :message "Server Key"))
-           (server-signature   (gen-hmac-digest :key server-key :message auth-message))
+           (client-signature   (gen-hmac-digest :key stored-key
+                                                :message (ironclad:ascii-string-to-byte-array auth-message)))
+           (client-proof       (logxor (bit-vector->integer client-key)
+                                       (bit-vector->integer client-signature)))
+           (server-key         (gen-hmac-digest :key salted-password
+                                                :message (ironclad:ascii-string-to-byte-array "Server Key")))
+           (server-signature   (gen-hmac-digest :key server-key
+                                                :message (ironclad:ascii-string-to-byte-array auth-message)))
            (final-message      (format nil "~a,p=~a" final-message-bare (base64-encode
                                                                           (write-to-string client-proof)))))
       (pairlis '(final-message server-signature) (list final-message server-signature)))))
