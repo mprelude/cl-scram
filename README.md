@@ -164,3 +164,5 @@ And finally, to get the number of iterations, you can call `parse-server-iterati
 ## TODO
 
 1. Implement [SASLprep](https://www.ietf.org/rfc/rfc4013.txt) algorithm to support the full gamut of passwords. For now, using the library with passwords containing unsupported characters is considered unsupported behavior.
+2. Add regression tests.
+3. Support algorithms other than SHA-1.
