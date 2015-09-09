@@ -4,6 +4,7 @@
             #:split-sequence)
   (:export  #:base64-decode
             #:base64-encode
+            #:base64-encode-octets
             #:gen-client-nonce
             #:gen-client-encoded-initial-message
             #:gen-client-initial-message

@@ -77,17 +77,6 @@ Next, we need to generate the first client message. To generate an un-encoded me
 "n,,n=username,r=x6uHptrIM6PAFMtmbGCN8uuy0LSnZCww"
 ```
 
-You'll typically want this base64 encoded. To do this, you can either wrap the call in `base64-encode` or call the convenience function `gen-client-encoded-initial-message`:
-
-```
-* (base64-encode (gen-client-initial-message :username "username" :nonce "x6uHptrIM6PAFMtmbGCN8uuy0LSnZCww"))
-
-"biwsbj11c2VybmFtZSxyPXg2dUhwdHJJTTZQQUZNdG1iR0NOOHV1eTBMU25aQ3d3"
-* (gen-client-encoded-initial-message :username "username" :nonce "x6uHptrIM6PAFMtmbGCN8uuy0LSnZCww")
-
-"biwsbj11c2VybmFtZSxyPXg2dUhwdHJJTTZQQUZNdG1iR0NOOHV1eTBMU25aQ3d3"
-```
-
 You'll need to pass this to the server.
 
 ### Generating final client message
