@@ -29,20 +29,27 @@
                                                 :message (ironclad:ascii-string-to-byte-array "Client Key")))
            (stored-key         (gen-sha1-digest :key client-key))
            (auth-message       (format nil "~a,~a,~a"
-                                       client-initial-message
+                                       (if (= 0 (search "n,," client-initial-message))
+                                           (subseq client-initial-message 3)
+                                           (format nil "~a" client-initial-message))
                                        server-response
                                        final-message-bare))
            (client-signature   (gen-hmac-digest :key stored-key
                                                 :message (ironclad:ascii-string-to-byte-array auth-message)))
-           (client-proof       (logxor (bit-vector->integer client-key)
-                                       (bit-vector->integer client-signature)))
+           (client-proof       (ironclad:integer-to-octets
+                                 (logxor (ironclad:octets-to-integer client-key)
+                                         (ironclad:octets-to-integer client-signature))))
            (server-key         (gen-hmac-digest :key salted-password
                                                 :message (ironclad:ascii-string-to-byte-array "Server Key")))
            (server-signature   (gen-hmac-digest :key server-key
                                                 :message (ironclad:ascii-string-to-byte-array auth-message)))
-           (final-message      (format nil "~a,p=~a" final-message-bare (base64-encode
-                                                                          (write-to-string client-proof)))))
-      (pairlis '(final-message server-signature) (list final-message server-signature)))))
+           (final-message      (format nil "~a,p=~a"
+                                       final-message-bare
+                                       (base64-encode-octets client-proof))))
+      (pairlis '(final-message
+                 server-signature)
+               (list final-message
+                     (base64-encode-octets server-signature))))))
 
 (defun gen-client-encoded-initial-message (&key username nonce)
   (check-type username string)

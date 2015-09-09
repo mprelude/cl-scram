@@ -5,6 +5,9 @@
   (check-type string string)
   (cl-base64:string-to-base64-string string))
 
+(defun base64-encode-octets (octets)
+  (cl-base64:usb8-array-to-base64-string octets))
+
 (defun base64-decode (string)
   (check-type string string)
   (cl-base64:base64-string-to-string string))

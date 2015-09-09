@@ -1,10 +1,5 @@
 # cl-scram
 
-**THIS LIBRARY IS NOT IN A WORKING STATE.
-PLEASE DO NOT DOWNLOAD IT AND EXPECT IT TO WORK IN YOUR CODE.**
-
-[TOC]
-
 ## Introduction
 
 I started developing this library when I was trying to use MongoDB with the [cl-mongo](https://github.com/fons/cl-mongo) driver, and it became apparent that the driver had not been updated to use mongo's modern SCRAM-SHA1 authentication method.
@@ -56,6 +51,8 @@ All of the functions are in the `#:cl-scram` package.
 
 ## Testing
 
+TODO: Add regression tests.
+
 ## Usage
 
 ### Generating a client nonce
@@ -91,7 +88,6 @@ You'll typically want this base64 encoded. To do this, you can either wrap the c
 "biwsbj11c2VybmFtZSxyPXg2dUhwdHJJTTZQQUZNdG1iR0NOOHV1eTBMU25aQ3d3"
 ```
 
-
 You'll need to pass this to the server.
 
 ### Generating final client message
@@ -99,14 +95,35 @@ You'll need to pass this to the server.
 The server should respond with a base64-encoded string, which when decoded looks something like this:
 
 ```
-r=6d442b5d9e51a740f369e3dcecf3178ec12b3985bbd4a8e6f814b422ab766573,s=Vdptv0j/N6fs2qtVADc1Xg==,i=8192
+r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096
 ```
 
-In order to generate the final response, we'll need to create a new request:
+In order to generate the final response, we'll need to create a new request (this is based on the exchange from the RFC document, in order to show that it creates the same final message):
 
-TODO: ADD client request generation docs.
+```
+* (gen-client-final-message 
+    :password "pencil" 
+    :client-nonce "fyko+d2lbbFgONRv9qkxdawL" 
+    :client-initial-message "n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL" 
+    :server-response "r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096")
 
-### Understanding the first server response
+((CL-SCRAM::SERVER-SIGNATURE
+  . #(174 97 125 166 165 124 75 187 46 2 134 86 141 174 29 37 25 5 176 164))
+ (CL-SCRAM::FINAL-MESSAGE
+  . "c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts="))
+```
+
+Your application will want to send the `final-message` back to the server, and store the `server-signature` for validating the server's final response.
+
+### Dealing with final server message
+
+The server will respond with a base64-encoded string. If this is the same as the `server-signature` from the last step, then authentication was successful.
+
+## Donations
+
+If this library has been helpful to you, I don't seek any donations, but please feel free to [donate to Quicklisp](https://www.quicklisp.org/donations.html), one of the most important projects in the CL ecosystem.
+
+## Understanding the first server response
 
 The server should respond with a base64-encoded string, when decoded, this will have three parameters:
 
@@ -143,12 +160,6 @@ And finally, to get the number of iterations, you can call `parse-server-iterati
 
 "8192"
 ```
-
-### Dealing with final server message
-
-## Donations
-
-If this library has been helpful to you, I don't seek any donations, but please feel free to [donate to Quicklisp](https://www.quicklisp.org/donations.html), one of the most important projects in the CL ecosystem.
 
 ## TODO
 
