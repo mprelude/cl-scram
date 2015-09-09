@@ -18,6 +18,7 @@
     :components  ((:module "src"
                            :serial T
                            :components ((:file "packages")
+                                        (:file "conditions")
                                         (:file "utils")
                                         (:file "scram")))
                   (:static-file "README.md")

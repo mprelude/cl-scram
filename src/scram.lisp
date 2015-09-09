@@ -7,6 +7,9 @@
   "Generate the SCRAM-SHA1 initial SASL message."
   (format nil "n,,n=~a,r=~a" username nonce))
 
+(define-condition unexpected-nonce (error)
+  ((text :initarg :text :reader text)))
+
 (defun gen-client-final-message
     (&key password client-nonce client-initial-message server-response)
   (check-type client-nonce string)
@@ -15,41 +18,41 @@
   (check-type password string)
   "Takes a password, the initial client nonce, the initial client message & the server response.
    Generates the final client message, and returns it along with the server signature."
-  (progn
-    (if (eq nil (parse-server-nonce :nonce client-nonce :response server-response)) NIL)
-    (let* ((final-message-bare (format nil "c=biws,r=~a" (parse-server-nonce :nonce client-nonce
-                                                                             :response server-response)))
-           (salted-password    (ironclad:pbkdf2-hash-password
-                                 (ironclad:ascii-string-to-byte-array password)
-                                 :salt       (ironclad:ascii-string-to-byte-array
-                                               (parse-server-salt :response server-response))
-                                 :digest     :sha1
-                                 :iterations (parse-server-iterations :response server-response)))
-           (client-key         (gen-hmac-digest :key salted-password
-                                                :message (ironclad:ascii-string-to-byte-array "Client Key")))
-           (stored-key         (gen-sha1-digest :key client-key))
-           (auth-message       (format nil "~a,~a,~a"
-                                       (if (= 0 (search "n,," client-initial-message))
-                                           (subseq client-initial-message 3)
-                                           (format nil "~a" client-initial-message))
-                                       server-response
-                                       final-message-bare))
-           (client-signature   (gen-hmac-digest :key stored-key
-                                                :message (ironclad:ascii-string-to-byte-array auth-message)))
-           (client-proof       (ironclad:integer-to-octets
-                                 (logxor (ironclad:octets-to-integer client-key)
-                                         (ironclad:octets-to-integer client-signature))))
-           (server-key         (gen-hmac-digest :key salted-password
-                                                :message (ironclad:ascii-string-to-byte-array "Server Key")))
-           (server-signature   (gen-hmac-digest :key server-key
-                                                :message (ironclad:ascii-string-to-byte-array auth-message)))
-           (final-message      (format nil "~a,p=~a"
-                                       final-message-bare
-                                       (base64-encode-octets client-proof))))
-      (pairlis '(final-message
-                 server-signature)
-               (list final-message
-                     (base64-encode-octets server-signature))))))
+  (if (eq nil (parse-server-nonce :nonce client-nonce :response server-response))
+      (error 'unexpected-nonce :text "The server nonce does not begin with the client nonce."))
+  (let* ((final-message-bare (format nil "c=biws,r=~a" (parse-server-nonce :nonce client-nonce
+                                                                           :response server-response)))
+         (salted-password    (ironclad:pbkdf2-hash-password
+                               (ironclad:ascii-string-to-byte-array password)
+                               :salt       (ironclad:ascii-string-to-byte-array
+                                           (parse-server-salt :response server-response))
+                               :digest     :sha1
+                               :iterations (parse-server-iterations :response server-response)))
+         (client-key         (gen-hmac-digest :key salted-password
+                                              :message (ironclad:ascii-string-to-byte-array "Client Key")))
+         (stored-key         (gen-sha1-digest :key client-key))
+         (auth-message       (format nil "~a,~a,~a"
+                                     (if (= 0 (search "n,," client-initial-message))
+                                         (subseq client-initial-message 3)
+                                         (format nil "~a" client-initial-message))
+                                     server-response
+                                     final-message-bare))
+         (client-signature   (gen-hmac-digest :key stored-key
+                                              :message (ironclad:ascii-string-to-byte-array auth-message)))
+         (client-proof       (ironclad:integer-to-octets
+                               (logxor (ironclad:octets-to-integer client-key)
+                                       (ironclad:octets-to-integer client-signature))))
+         (server-key         (gen-hmac-digest :key salted-password
+                                              :message (ironclad:ascii-string-to-byte-array "Server Key")))
+         (server-signature   (gen-hmac-digest :key server-key
+                                              :message (ironclad:ascii-string-to-byte-array auth-message)))
+         (final-message      (format nil "~a,p=~a"
+                                     final-message-bare
+                                     (base64-encode-octets client-proof))))
+    (pairlis '(final-message
+               server-signature)
+              (list final-message
+                    (base64-encode-octets server-signature)))))
 
 (defun gen-client-encoded-initial-message (&key username nonce)
   (check-type username string)
