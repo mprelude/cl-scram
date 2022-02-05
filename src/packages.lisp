@@ -12,4 +12,5 @@
             #:gen-sasl-password
             #:parse-server-nonce
             #:parse-server-salt
-            #:parse-server-iterations))
+            #:parse-server-iterations
+            #:parse-server-signature))

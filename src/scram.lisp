@@ -108,3 +108,9 @@
   (parse-integer (cdr (assoc "i"
                              (parse-server-response :response response)
                              :test #'equal))))
+
+(defun parse-server-signature (&key response)
+  (check-type response string)
+  (cdr (assoc "v"
+              (parse-server-response :response response)
+              :test #'equal)))
